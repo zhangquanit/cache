@@ -20,6 +20,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
+ * LRU算法就是当缓存空间满了的时候，将最近最少使用的数据从缓存空间中删除以增加可用的缓存空间来缓存新数据。
+ * LruCache中维护了一个集合LinkedHashMap，该LinkedHashMap是以访问顺序排序的。
+ * 当访问一个元素时，会将该元素移除添加到队首，当缓存满了，将移除掉队尾的元素。
+ * 1、默认是按元素个数来计算缓存容量的，重写sizeOf()计算缓存
+ * 2、不允许key/value为null
+ *
+ *
  * A cache that holds strong references to a limited number of values. Each time
  * a value is accessed, it is moved to the head of a queue. When a value is
  * added to a full cache, the value at the end of that queue is evicted and may
@@ -63,7 +70,7 @@ public class LruCache<K, V> {
     private final LinkedHashMap<K, V> map;
 
     /** Size of this cache in units. Not necessarily the number of elements. */
-    private int size;
+    private int size; //当前缓存大小
     private int maxSize;
 
     private int putCount;
@@ -82,6 +89,7 @@ public class LruCache<K, V> {
             throw new IllegalArgumentException("maxSize <= 0");
         }
         this.maxSize = maxSize;
+        //accessOrder,这个参数是排序模式，true表示在访问的时候进行排序( LruCache 核心工作原理就在此)，false表示在插入的时才排序。
         this.map = new LinkedHashMap<K, V>(0, 0.75f, true);
     }
 
@@ -170,6 +178,7 @@ public class LruCache<K, V> {
         synchronized (this) {
             putCount++;
             size += safeSizeOf(key, value);
+            //向map中加入缓存对象,若缓存中已存在，返回已有的值，否则执行插入新的数据，并返回null
             previous = map.put(key, value);
             if (previous != null) {
                 size -= safeSizeOf(key, previous);
@@ -205,6 +214,7 @@ public class LruCache<K, V> {
                     break;
                 }
 
+                //在缓存队列中查找最近最少使用的元素，若不存在，直接退出循环，若存在则直接在map中删除。
                 Map.Entry<K, V> toEvict = map.eldest();
                 if (toEvict == null) {
                     break;
